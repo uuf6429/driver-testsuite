@@ -40,10 +40,7 @@ final class BasicAuthTest extends TestCase
         $url = $this->pathTo('/basic_auth.php');
         $url = str_replace('://', '://mink-user:wrong@', $url);
         $session->visit($url);
-        // How the browser behaves with wrong credentials is browser specific (e.g. it might ask again for
-        // credentials or it might display the auth failure. But what we are really interested in is that
-        // the user is no longer authenticated.
-        $this->assertStringNotContainsString('is authenticated', $session->getPage()->getContent());
+        $this->assertStringContainsString('is not authenticated', $session->getPage()->getContent());
     }
 
     public function testResetBasicAuth()

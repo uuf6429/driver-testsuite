@@ -32,7 +32,7 @@ abstract class TestCase extends BaseTestCase
     {
         if (null === self::$mink) {
             $session = new Session(self::getConfig()->createDriver());
-            self::$mink = new Mink(array('sess' => $session));
+            self::$mink = new Mink(['sess' => $session]);
         }
     }
 
@@ -41,7 +41,7 @@ abstract class TestCase extends BaseTestCase
      *
      * @throws \UnexpectedValueException if the global driver_config_factory returns an invalid object
      */
-    private static function getConfig()
+    private static function getConfig(): AbstractConfig
     {
         if (null === self::$config) {
             self::$config = call_user_func($GLOBALS['driver_config_factory']);
@@ -114,7 +114,7 @@ abstract class TestCase extends BaseTestCase
      */
     protected function findById($id)
     {
-        return $this->getAssertSession()->elementExists('named', array('id', $id));
+        return $this->getAssertSession()->elementExists('named', ['id', $id]);
     }
 
     /**
@@ -155,13 +155,13 @@ abstract class TestCase extends BaseTestCase
      */
     protected function pathTo($path)
     {
-        return rtrim(self::getConfig()->getWebFixturesUrl(), '/').'/'.ltrim($path, '/');
+        return rtrim(self::getConfig()->getWebFixturesUrl(), '/') . '/' . ltrim($path, '/');
     }
 
     /**
      * Waits for a condition to be true, considering than it is successful for drivers not supporting wait().
      *
-     * @param int    $time
+     * @param int $time
      * @param string $condition A JS condition to evaluate
      *
      * @return bool

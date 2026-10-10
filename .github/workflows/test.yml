@@ -29,10 +29,16 @@ on:
         description: Command to run after test
         required: false
         type: string
+      allowFailure:
+        description: Whether a failing test run should leave the workflow green
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   Test:
     runs-on: ubuntu-latest
+    continue-on-error: ${{ inputs.allowFailure }}
     steps:
       - name: Set up workspace for driver repo
         # language=bash

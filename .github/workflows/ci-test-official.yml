@@ -39,7 +39,7 @@ jobs:
             # language=bash
             testCmd: ./vendor/bin/phpunit --colors=always --testdox
 
-          - name: "Selenium2"
+          - name: "Selenium2 (Firefox)"
             driverRepoUrl: "https://github.com/minkphp/MinkSelenium2Driver.git"
             driverRepoBranch: "master"
             php: "7.2"
@@ -59,7 +59,27 @@ jobs:
             tearDownCmd: |
               docker compose logs --no-color --no-log-prefix --timestamps selenium &> ./logs/selenium.docker.log
 
-          - name: "WebDriver-Classic"
+          - name: "Selenium2 (Chrome)"
+            driverRepoUrl: "https://github.com/minkphp/MinkSelenium2Driver.git"
+            driverRepoBranch: "master"
+            php: "7.2"
+            # language=bash
+            setUpCmd: |
+              export SELENIUM_IMAGE=selenium/standalone-chrome:3.141.59
+              docker compose up --wait --quiet-pull
+              curl --retry 5 --retry-all-errors --retry-delay 1 --max-time 10 --head -X GET http://localhost:4444/wd/hub/status
+            # language=bash
+            testCmd: |
+              export WEB_FIXTURES_BROWSER=chrome
+              export SELENIUM_VERSION=3.141.59
+              export DRIVER_MACHINE_BASE_PATH=/fixtures/
+              export WEB_FIXTURES_HOST=http://host.docker.internal:8002
+              ./vendor/bin/phpunit --colors=always --testdox
+            # language=bash
+            tearDownCmd: |
+              docker compose logs --no-color --no-log-prefix --timestamps selenium &> ./logs/selenium.docker.log
+
+          - name: "WebDriver-Classic (Firefox)"
             driverRepoUrl: "https://github.com/minkphp/webdriver-classic-driver.git"
             driverRepoBranch: "main"
             php: "7.4"
@@ -68,9 +88,29 @@ jobs:
               export SELENIUM_IMAGE=selenium/standalone-firefox:4
               docker compose up --wait --quiet-pull
               curl --retry 5 --retry-all-errors --retry-delay 1 --max-time 10 --head -X GET http://localhost:4444/wd/hub/status
+            # mouse-events excluded: Hover::testDoubleClickHover and ::testRightClickHover fail on Firefox
             # language=bash
             testCmd: |
               export WEB_FIXTURES_BROWSER=firefox
+              export DRIVER_MACHINE_BASE_PATH=/fixtures/
+              export WEB_FIXTURES_HOST=http://host.docker.internal:8002
+              ./vendor/bin/phpunit --colors=always --testdox --exclude-group mouse-events
+            # language=bash
+            tearDownCmd: |
+              docker compose logs --no-color --no-log-prefix --timestamps selenium &> ./logs/selenium.docker.log
+
+          - name: "WebDriver-Classic (Chrome)"
+            driverRepoUrl: "https://github.com/minkphp/webdriver-classic-driver.git"
+            driverRepoBranch: "main"
+            php: "7.4"
+            # language=bash
+            setUpCmd: |
+              export SELENIUM_IMAGE=selenium/standalone-chrome:4
+              docker compose up --wait --quiet-pull
+              curl --retry 5 --retry-all-errors --retry-delay 1 --max-time 10 --head -X GET http://localhost:4444/wd/hub/status
+            # language=bash
+            testCmd: |
+              export WEB_FIXTURES_BROWSER=chrome
               export DRIVER_MACHINE_BASE_PATH=/fixtures/
               export WEB_FIXTURES_HOST=http://host.docker.internal:8002
               ./vendor/bin/phpunit --colors=always --testdox

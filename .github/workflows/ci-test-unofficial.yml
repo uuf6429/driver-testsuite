@@ -1,6 +1,10 @@
 name: Unofficial Tests
 
 on:
+  push:
+    branches:
+      - master
+  pull_request:
   workflow_dispatch:
 
 defaults:
@@ -9,39 +13,41 @@ defaults:
 
 jobs:
   run_tests:
-    name: ${{ matrix.name }}
+    name: "Unofficial (${{ matrix.name }})"
     uses: "./.github/workflows/test.yml"
     with:
-      name: ${{ matrix.name }}
+      name: Unofficial - ${{ matrix.name }}
       driverRepoUrl: ${{ matrix.driverRepoUrl }}
       driverRepoBranch: ${{ matrix.driverRepoBranch }}
       php: ${{ matrix.php }}
       setUpCmd: ${{ matrix.setUpCmd }}
       testCmd: ${{ matrix.testCmd }}
       tearDownCmd: ${{ matrix.tearDownCmd }}
+      allowFailure: true
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: "Chrome"
+          - name: "chrome-mink-driver"
             driverRepoUrl: "https://gitlab.com/behat-chrome/chrome-mink-driver.git"
             driverRepoBranch: "main"
-            php: "8.1"
+            php: "8.2"
             # language=bash
             setUpCmd: |
-              docker run --detach --quiet --network=host --shm-size=1g --entrypoint= \
-                         --volume ./vendor/mink/driver-testsuite/web-fixtures:/fixtures \
+              docker run --detach --quiet --network=host --shm-size=1g \
                          --name chrome zenika/alpine-chrome:latest \
-                         chromium-browser --remote-debugging-address=127.0.0.1 --remote-debugging-port=9222 --enable-logging=stderr --v=1 \
-                                          --no-sandbox --enable-automation --headless=new --no-first-run --disable-background-networking \
-                                          --disable-gpu --disable-extensions --disable-web-security --disable-features=UseDbus
+                         --remote-debugging-address=127.0.0.1 --remote-debugging-port=9222 \
+                         --no-sandbox --use-gl=swiftshader --disable-software-rasterizer --disable-dev-shm-usage
+              # File upload tests supply Chrome job runner file paths, copy fixtures to same location for Chrome.
+              docker exec --user root chrome mkdir -p $PWD/vendor/mink/driver-testsuite
+              docker cp $PWD/vendor/mink/driver-testsuite/web-fixtures chrome:$PWD/vendor/mink/driver-testsuite/web-fixtures
               sed -e "s#http://localhost/#http://localhost:8002/#" -e "s#http://localhost:9222#http://127.0.0.1:9222#" phpunit.xml.dist > phpunit.xml
               curl --retry 5 --retry-all-errors --retry-delay 1 --max-time 10 --head -X GET http://localhost:9222/
             # language=bash
             testCmd: |
               export WEB_FIXTURES_BROWSER=chrome
-              export DRIVER_MACHINE_BASE_PATH=/fixtures/
               ./vendor/bin/phpunit --colors=always --testdox
             # language=bash
             tearDownCmd: |
               docker logs --timestamps chrome &> ./logs/chrome.docker.log
+              docker rm --force chrome
